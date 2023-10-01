@@ -2,9 +2,8 @@ import typer
 import cv2
 
 from pathlib import Path
-from herod.database import record_image_id
 from herod.feature import FeatureExtractor
-from herod import helpers
+from herod import helpers, server
 from pymilvus import (
     connections,
     utility,
@@ -36,6 +35,7 @@ def create_collection(
     name: str,
     force: bool = False,
     description: str = "",
+    partition: bool = False,
 ):
     """建立一个集合"""
     if utility.has_collection(name):
@@ -52,36 +52,73 @@ def create_collection(
             name="embedding", dtype=DataType.FLOAT_VECTOR, dim=64, description="图片特征向量"
         ),
     ]
+    if partition:
+        fields.append(
+            FieldSchema(
+                name="partition",
+                dtype=DataType.VARCHAR,
+                description="额外分区字段",
+                is_partition=True,
+            )
+        )
     schema = CollectionSchema(fields=fields, description=description)
-    collection = Collection(name=name, schema=schema)
+    Collection(name=name, schema=schema)
 
+
+@app.command()
+def drop_collection(name: str):
+    """删除一个集合"""
+    utility.drop_collection(name)
+
+
+@app.command()
+def create_index(collection: str, index_type: str = "DISKANN"):
+    """为集合建立索引"""
+    collection = Collection(name=collection)
     index_params = {
         "metric_type": "L2",
-        "index_type": "DISKANN",
+        "index_type": index_type,
     }
     collection.create_index(field_name="embedding", index_params=index_params)
 
 
 @app.command()
-def add_image(collection: str, path: str):
+def drop_index(collection: str):
+    """删除集合的索引"""
+    collection = Collection(name=collection)
+    collection.drop_index()
+
+
+@app.command()
+def add_image(collection: str, path: str, count: int = 500, partition: str = None):
     """往集合中增加一张图片或递归添加一个文件夹中的图片"""
     path = Path(path)
     if path.is_dir():
         for file in path.rglob("**/*.*"):
             try:
-                helpers.add_image(collection, str(file))
+                helpers.add_image(collection, str(file), count, partition)
                 typer.echo(f"处理 {file} 完成")
             except Exception as e:
                 typer.echo(f"处理 {file} 时出现错误：{e}")
     else:
-        helpers.add_image(collection, str(path))
+        helpers.add_image(collection, str(path), count, partition)
         typer.echo(f"处理 {path} 完成")
 
 
 @app.command()
-def search_image(collection: str, filename: str):
+def search_image(
+    collection: str, filename: str, search_list: int = 16, limit: int = 100
+):
     """在集合中搜索一张图片"""
-    helpers.search_image(collection, filename)
+    result = helpers.search_image(collection, filename, search_list, limit)
+    for filename, image_id, distance in result:
+        typer.echo(f"{filename} {image_id} {distance}")
+
+
+@app.command()
+def start_server():
+    """启动服务器"""
+    server.start_server()
 
 
 def main():

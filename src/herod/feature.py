@@ -29,8 +29,11 @@ class FeatureExtractor:
         return self.extractor.compute(img, kp)
 
     def detect_and_compute(
-        self, img: cv2.typing.MatLike, count: int | None = None
+        self, img: cv2.typing.MatLike, count: int | None = None, resize: bool = True
     ) -> tuple[typing.Sequence[cv2.KeyPoint], cv2.typing.MatLike]:
+        # TODO: 对于超长图片，缩放可能会严重影响分辨率
+        if resize:
+            img = adjust_image_size(img)
         keys = self.detect(img, count)
         return self.compute(img, keys)
 
@@ -94,3 +97,10 @@ def fufp_extract(
                     result.append(max(boxes[y + 1][x + 1], key=lambda k: k.response))
 
     return result
+
+
+def adjust_image_size(img: cv2.typing.MatLike, width: int = 1920, height: int = 1080):
+    if img.shape[0] > height or img.shape[1] > width:
+        scale = min(height / img.shape[0], width / img.shape[1])
+        img = cv2.resize(img, (0, 0), fx=scale, fy=scale)
+    return img
