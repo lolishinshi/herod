@@ -20,5 +20,5 @@ async def search_image(
     return helpers.search_image(collection, img, search_list, limit)
 
 
-def start_server():
-    uvicorn.run(api, host="0.0.0.0", port=8000)
+def start_server(host: str, port: int):
+    uvicorn.run(api, host=host, port=port, reload=False)

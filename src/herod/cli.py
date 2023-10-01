@@ -1,8 +1,8 @@
 import typer
 import cv2
-
+from typing_extensions import Annotated
 from pathlib import Path
-from herod.feature import FeatureExtractor
+from herod.feature import FeatureExtractor, Filter, Extractor
 from herod import helpers, server
 from pymilvus import (
     connections,
@@ -18,34 +18,40 @@ connections.connect(host="localhost", port="19530")
 
 
 @app.command()
-def show_feature(filename: str, count: int = 500):
+def show_feature(
+    filename: Annotated[str, typer.Argument(help="图片路径")],
+    limit: Annotated[int, typer.Option(help="限制特征点数量，如果为 0 表示不限制")] = 500,
+    brief: Annotated[bool, typer.Option(help="使用简洁版的绘图")] = True,
+    extractor: Annotated[Extractor, typer.Option(help="特征点提取算法")] = Extractor.SURF,
+    filter: Annotated[Filter, typer.Option(help="特征点均匀化算法")] = Filter.QUAD,
+):
     """展示图片的特征点提取结果"""
-    extractor = FeatureExtractor("SURF")
+    extractor = FeatureExtractor(extractor, filter)
 
     img = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
-    keys = extractor.detect(img, count)
+    keys = extractor.detect(img, limit if limit > 0 else None)
 
-    img = cv2.drawKeypoints(
-        img, keys, None, flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS
-    )
+    if not brief:
+        img = cv2.drawKeypoints(
+            img, keys, None, flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS
+        )
+    else:
+        img = cv2.drawKeypoints(img, keys, None)
     cv2.imshow("show", img)
-    cv2.waitKey(0)
+    while True:
+        if cv2.waitKey() == -1:
+            break
 
 
 @app.command()
 def create_collection(
-    name: str,
-    force: bool = False,
-    description: str = "",
-    partition: bool = False,
+    name: Annotated[str, typer.Argument(help="集合名称")],
+    description: Annotated[str, typer.Option(help="集合描述")] = "",
 ):
     """建立一个集合"""
     if utility.has_collection(name):
-        if not force:
-            typer.echo(f"集合 {name} 已存在，如需覆盖请使用 --force 参数")
-            raise typer.Exit(1)
-        else:
-            utility.drop_collection(name)
+        typer.echo(f"集合 {name} 已存在")
+        raise typer.Exit(1)
 
     fields = [
         FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
@@ -54,15 +60,6 @@ def create_collection(
             name="embedding", dtype=DataType.FLOAT_VECTOR, dim=64, description="图片特征向量"
         ),
     ]
-    if partition:
-        fields.append(
-            FieldSchema(
-                name="partition",
-                dtype=DataType.VARCHAR,
-                description="额外分区字段",
-                is_partition=True,
-            )
-        )
     schema = CollectionSchema(fields=fields, description=description)
     Collection(name=name, schema=schema)
 
@@ -109,7 +106,10 @@ def add_image(collection: str, path: str, count: int = 500, partition: str = Non
 
 @app.command()
 def search_image(
-    collection: str, filename: str, search_list: int = 16, limit: int = 100
+    collection: Annotated[str, typer.Argument(help="集合名称")],
+    filename: Annotated[str, typer.Argument(help="图片路径")],
+    search_list: Annotated[int, typer.Option(help="搜索列表大小，越大越准确，但是速度越慢")] = 32,
+    limit: Annotated[int, typer.Option(help="每个向量的匹配数量")] = 100,
 ):
     """在集合中搜索一张图片"""
     result = helpers.search_image(collection, filename, search_list, limit)
@@ -118,9 +118,9 @@ def search_image(
 
 
 @app.command()
-def start_server():
+def start_server(host: str = "0.0.0.0", port: int = 8080):
     """启动服务器"""
-    server.start_server()
+    server.start_server(host, port)
 
 
 def main():

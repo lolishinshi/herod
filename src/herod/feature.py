@@ -1,18 +1,33 @@
 import math
 import typing
-
+from enum import Enum
 import cv2
 
 
+class Extractor(str, Enum):
+    SURF = "SURF"
+    SIFT = "SIFT"
+
+
+class Filter(str, Enum):
+    FUFP = "FUFP"
+    QUAD = "QUAD"
+
+
 class FeatureExtractor:
-    def __init__(self, name: str):
-        if name == "SURF":
-            # TODO: upRight 设置为 True，忽略方向来获得更快的计算速度？
-            self.extractor = cv2.xfeatures2d.SURF.create(hessianThreshold=500)
-        elif name == "SIFT":
-            self.extractor = cv2.SIFT.create()
-        else:
-            raise ValueError(f"Unknown feature extractor: {name}")
+    def __init__(self, name: Extractor = Extractor.SURF, filter: Filter = Filter.QUAD):
+        match name:
+            case Extractor.SURF:
+                # TODO: upRight 设置为 True，忽略方向来获得更快的计算速度？
+                self.extractor = cv2.xfeatures2d.SURF.create(hessianThreshold=500)
+            case Extractor.SIFT:
+                self.extractor = cv2.SIFT.create()
+
+        match filter:
+            case Filter.FUFP:
+                self.filter = fufp_extract
+            case Filter.QUAD:
+                self.filter = quad_filter
 
     def detect(
         self, img: cv2.typing.MatLike, count: int | None = None
@@ -21,7 +36,7 @@ class FeatureExtractor:
             return self.extractor.detect(img)
         else:
             keys = self.extractor.detect(img)
-            return fufp_extract(keys, img.shape[0], img.shape[1], count)
+            return self.filter(keys, img.shape[0], img.shape[1], count)
 
     def compute(
         self, img: cv2.typing.MatLike, kp: typing.Sequence[cv2.KeyPoint]
@@ -104,3 +119,78 @@ def adjust_image_size(img: cv2.typing.MatLike, width: int = 1920, height: int = 
         scale = min(height / img.shape[0], width / img.shape[1])
         img = cv2.resize(img, (0, 0), fx=scale, fy=scale)
     return img
+
+
+class QuadNode:
+    def __init__(
+        self, keys: list[cv2.KeyPoint], x: float, y: float, width: float, height: float
+    ):
+        self.keys = keys
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+
+    def split(self) -> list["QuadNode"]:
+        dx = self.x + self.width / 2
+        dy = self.y + self.height / 2
+        ul, ur, dl, dr = [], [], [], []
+
+        for key in self.keys:
+            if key.pt[0] < dx:
+                if key.pt[1] < dy:
+                    ul.append(key)
+                else:
+                    dl.append(key)
+            else:
+                if key.pt[1] < dy:
+                    ur.append(key)
+                else:
+                    dr.append(key)
+
+        result = [
+            QuadNode(ul, self.x, self.y, self.width / 2, self.height / 2),
+            QuadNode(ur, dx, self.y, self.width / 2, self.height / 2),
+            QuadNode(dl, self.x, dy, self.width / 2, self.height / 2),
+            QuadNode(dr, dx, dy, self.width / 2, self.height / 2),
+        ]
+        return [node for node in result if node.keys]
+
+    @property
+    def can_split(self):
+        return len(self.keys) > 1
+
+
+def quad_filter(
+    keys: typing.Sequence[cv2.KeyPoint], height: int, width: int, limit: int
+) -> list[cv2.KeyPoint]:
+    """
+    使用四叉树均匀地从图像出提取出若干个特征点
+    :param keys: 候选特征点
+    :param height: 图像高度
+    :param width: 图像宽度
+    :param limit: 需要提取的特征点个数
+    :return:
+    """
+    root = QuadNode(list(keys), 0, 0, width, height)
+    nodes = root.split()
+    end = False
+    while not end:
+        nodes.sort(key=lambda n: len(n.keys), reverse=True)
+        tmp = []
+        no_split = True
+        while nodes:
+            node = nodes.pop()
+            if node.can_split:
+                tmp.extend(node.split())
+                no_split = False
+            else:
+                tmp.append(node)
+            if len(tmp) + len(nodes) >= limit:
+                end = True
+                break
+        if no_split:
+            end = True
+        nodes.extend(tmp)
+
+    return [max(node.keys, key=lambda key: key.response) for node in nodes]

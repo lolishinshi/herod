@@ -1,5 +1,5 @@
 import cv2
-from herod.database import record_image_id, get_image_by_id, get_image_hash
+from herod.database import Lmdb, get_image_hash
 from herod.feature import FeatureExtractor
 from pymilvus import Collection
 from collections import defaultdict
@@ -17,16 +17,20 @@ def add_image(collection: str, filename: str, count: int = 500, partition: str =
     :param partition: 分区名称
     :return:
     """
+    mdb = Lmdb(collection)
     image_id = get_image_hash(filename)
-    if get_image_by_id(image_id) is None:
+    if mdb.get_image_by_id(image_id) is None:
         img = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
         _, des = extractor.detect_and_compute(img, count)
+        # 可能会有空白图片，没有特征点
+        if not des:
+            return
         collection = Collection(name=collection)
         data = [[image_id] * len(des), des]
         if partition:
             data.append([partition] * len(des))
         collection.insert(data)
-    record_image_id(image_id, filename)
+    mdb.record_image_id(image_id, filename)
 
 
 def search_image(
@@ -43,6 +47,8 @@ def search_image(
     :param limit: 返回结果数量
     :return:
     """
+    mdb = Lmdb(collection)
+
     if isinstance(image, str):
         img = cv2.imread(image, cv2.IMREAD_GRAYSCALE)
     else:
@@ -67,10 +73,10 @@ def search_image(
         for image in result:
             d[image.entity.get("image")].append(image.distance)
 
-    d = sorted(d.items(), key=lambda x: len(x[1]), reverse=True)
     d = [
-        (get_image_by_id(i[0]).decode(), len(i[1]), sum(i[1]) / len(i[1]))
+        (mdb.get_image_by_id(i[0]).decode(), len(i[1]), sum(i[1]) / len(i[1]))
         for i in d[:20]
     ]
+    d.sort(key=lambda x: x[2])
 
     return d
