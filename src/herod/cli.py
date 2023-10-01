@@ -25,7 +25,9 @@ def show_feature(filename: str, count: int = 500):
     img = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
     keys = extractor.detect(img, count)
 
-    img = cv2.drawKeypoints(img, keys, None)
+    img = cv2.drawKeypoints(
+        img, keys, None, flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS
+    )
     cv2.imshow("show", img)
     cv2.waitKey(0)
 
