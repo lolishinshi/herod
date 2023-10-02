@@ -24,10 +24,18 @@ class Lmdb:
         with self.env.begin() as txn:
             return txn.get(image_id.to_bytes(5, "big"))
 
+    def delete(self):
+        """删除集合"""
+        os.remove(self.env.path())
+        del Lmdb._env[self.env.path()]
 
-# FIXME: 不同集合的图片可能会有重复，需要使用集合名称进行区分
-def get_image_hash(filename: str) -> int:
-    with open(filename, "rb") as f:
-        data = f.read()
-        digest = blake3.blake3(data).digest()
+
+def get_image_hash(file: str | bytes) -> int:
+    if isinstance(file, str):
+        with open(file, "rb") as f:
+            data = f.read()
+            digest = blake3.blake3(data).digest()
+            return int.from_bytes(digest[:5], "big")
+    else:
+        digest = blake3.blake3(file).digest()
         return int.from_bytes(digest[:5], "big")

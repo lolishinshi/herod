@@ -1,3 +1,8 @@
 [milvus]
 host = "localhost"
 port = 19530
+
+[feature]
+extractor = "SURF"
+filter = "FUFP"
+limit = 500

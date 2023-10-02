@@ -15,7 +15,7 @@ class Filter(str, Enum):
 
 
 class FeatureExtractor:
-    def __init__(self, name: Extractor = Extractor.SURF, filter: Filter = Filter.QUAD):
+    def __init__(self, name: Extractor, filter: Filter):
         match name:
             case Extractor.SURF:
                 # TODO: upRight 设置为 True，忽略方向来获得更快的计算速度？

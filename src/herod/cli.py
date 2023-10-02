@@ -2,8 +2,11 @@ import typer
 import cv2
 from typing_extensions import Annotated
 from pathlib import Path
+
+from herod.database import Lmdb
 from herod.feature import FeatureExtractor, Filter, Extractor
-from herod import helpers, server
+from herod.indexer import Indexer
+from herod import server
 from pymilvus import (
     connections,
     utility,
@@ -23,7 +26,7 @@ def show_feature(
     limit: Annotated[int, typer.Option(help="限制特征点数量，如果为 0 表示不限制")] = 500,
     brief: Annotated[bool, typer.Option(help="使用简洁版的绘图")] = True,
     extractor: Annotated[Extractor, typer.Option(help="特征点提取算法")] = Extractor.SURF,
-    filter: Annotated[Filter, typer.Option(help="特征点均匀化算法")] = Filter.QUAD,
+    filter: Annotated[Filter, typer.Option(help="特征点均匀化算法")] = Filter.FUFP,
 ):
     """展示图片的特征点提取结果"""
     extractor = FeatureExtractor(extractor, filter)
@@ -68,6 +71,7 @@ def create_collection(
 def drop_collection(name: str):
     """删除一个集合"""
     utility.drop_collection(name)
+    Lmdb(name).delete()
 
 
 @app.command()
@@ -89,18 +93,25 @@ def drop_index(collection: str):
 
 
 @app.command()
-def add_image(collection: str, path: str, count: int = 500, partition: str = None):
+def add_image(
+    collection: str,
+    path: str,
+    limit: int = 500,
+    extractor: Annotated[Extractor, typer.Option(help="特征点提取算法")] = Extractor.SURF,
+    filter: Annotated[Filter, typer.Option(help="特征点均匀化算法")] = Filter.FUFP,
+):
     """往集合中增加一张图片或递归添加一个文件夹中的图片"""
     path = Path(path)
+    indexer = Indexer(collection, extractor=extractor, filter=filter)
     if path.is_dir():
         for file in path.rglob("**/*.*"):
             try:
-                helpers.add_image(collection, str(file), count, partition)
+                indexer.add_image(str(file), limit)
                 typer.echo(f"处理 {file} 完成")
             except Exception as e:
                 typer.echo(f"处理 {file} 时出现错误：{e}")
     else:
-        helpers.add_image(collection, str(path), count, partition)
+        indexer.add_image(str(path), limit)
         typer.echo(f"处理 {path} 完成")
 
 
@@ -112,9 +123,10 @@ def search_image(
     limit: Annotated[int, typer.Option(help="每个向量的匹配数量")] = 100,
 ):
     """在集合中搜索一张图片"""
-    result = helpers.search_image(collection, filename, search_list, limit)
-    for filename, image_id, distance in result:
-        typer.echo(f"{filename} {image_id} {distance}")
+    indexer = Indexer(collection, search=True)
+    result = indexer.search_image(filename, search_list, limit)
+    for filename, image_id, distance in result[:20]:
+        typer.echo(f"{filename}\t{image_id}\t{distance}")
 
 
 @app.command()
