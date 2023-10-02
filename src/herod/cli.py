@@ -120,11 +120,12 @@ def search_image(
     collection: Annotated[str, typer.Argument(help="集合名称")],
     filename: Annotated[str, typer.Argument(help="图片路径")],
     search_list: Annotated[int, typer.Option(help="搜索列表大小，越大越准确，但是速度越慢")] = 32,
+    search_limit: Annotated[int, typer.Option(help="被搜索图片的采样点数量")] = 100,
     limit: Annotated[int, typer.Option(help="每个向量的匹配数量")] = 100,
 ):
     """在集合中搜索一张图片"""
     indexer = Indexer(collection, search=True)
-    result = indexer.search_image(filename, search_list, limit)
+    result = indexer.search_image(filename, search_list, search_limit, limit)
     for filename, image_id, distance in result[:20]:
         typer.echo(f"{filename}\t{image_id}\t{distance}")
 

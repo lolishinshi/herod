@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import typer
 
 from herod.database import Lmdb, get_image_hash
 from herod.feature import FeatureExtractor, Extractor, Filter
@@ -18,6 +19,7 @@ class Indexer:
     ):
         self.collection = Collection(name=collection)
         if search:
+            typer.echo(f"正在加载集合 {collection} 的索引")
             self.collection.load()
         self.extractor = FeatureExtractor(extractor, filter)
         self.mdb = Lmdb(collection)
@@ -64,21 +66,22 @@ class Indexer:
         self,
         image: str | cv2.typing.MatLike,
         search_list: int = 16,
+        search_limit: int = 100,
         limit: int = 100,
     ) -> list[tuple[str, int, float]]:
         """
         在集合中搜索图片
         :param image: 图片
         :param search_list: 搜索列表大小，越大越准确，但是速度越慢
+        :param search_limit: 被搜索图片的采样点数量
         :param limit: 返回结果数量
         :return:
         """
-
         if isinstance(image, str):
             img = cv2.imread(image, cv2.IMREAD_GRAYSCALE)
         else:
             img = image
-        _, des = self.extractor.detect_and_compute(img, 500)
+        _, des = self.extractor.detect_and_compute(img, search_limit)
 
         now = datetime.now()
         results = self.collection.search(

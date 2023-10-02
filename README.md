@@ -20,4 +20,28 @@ CMAKE_ARGS="-DOPENCV_ENABLE_NONFREE=ON" PDM_NO_BINARY=opencv-contrib-python pdm 
 
 ## 使用
 
+1. 创建集合
 
+```bash
+herod create-collection mycollection
+```
+
+2. 添加图片
+
+```bash
+herod add-image mycollection /path/to/image
+```
+
+3. 创建索引
+
+注意：索引只需要创建一次，后续新添加图片时不需要再次创建索引
+
+```bash
+herod create-index mycollection
+```
+
+3. 搜索图片
+
+```bash
+herod search-image mycollection /path/to/image
+```

@@ -45,6 +45,7 @@ async def search_image(
     collection: str,
     file: UploadFile = File(...),
     search_list: int = 16,
+    search_limit: int = 100,
     limit: int = 100,
 ):
     if collection not in INDEXER:
@@ -52,7 +53,7 @@ async def search_image(
     buf = await file.read()
     img = np.frombuffer(buf, dtype=np.uint8)
     img = cv2.imdecode(img, cv2.IMREAD_GRAYSCALE)
-    return INDEXER[collection].search_image(collection, img, search_list, limit)[:20]
+    return INDEXER[collection].search_image(img, search_list, search_limit, limit)[:20]
 
 
 def start_server(host: str, port: int):
