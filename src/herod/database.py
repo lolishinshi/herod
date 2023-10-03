@@ -1,5 +1,5 @@
 import os
-
+from pathlib import Path
 import lmdb
 import blake3
 
@@ -8,6 +8,8 @@ class Lmdb:
     _env: dict[str, lmdb.Environment] = {}
 
     def __init__(self, collection: str):
+        if Path("./lmdb").exists() is False:
+            os.mkdir("./lmdb")
         if Lmdb._env.get(collection) is None:
             Lmdb._env[collection] = lmdb.open(
                 f"./lmdb/{collection}.mdb", map_size=1024**3, subdir=False

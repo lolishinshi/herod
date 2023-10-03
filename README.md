@@ -5,7 +5,9 @@
 herod 使用 milvus 作为后端，需要安装 milvus。此处使用 docker 部署 milvus 单机实例
 
 ```bash
+wget https://raw.githubusercontent.com/milvus-io/milvus/v2.3.1/configs/milvus.yaml -O milvus.yaml
 wget https://github.com/milvus-io/milvus/releases/download/v2.3.1/milvus-standalone-docker-compose.yml -O docker-compose.yml
+# 修改 docker-compose.yml 添加 /local/path/to/your/milvus.yaml:/milvus/configs/milvus.yaml 的映射
 sudo docker-compose up -d
 ```
 
@@ -39,6 +41,9 @@ herod add-image mycollection /path/to/image
 ```bash
 herod create-index mycollection
 ```
+
+构建索引时，对硬盘的需求不大，但需要约 segment 大小 1.7~2 倍左右的内存。
+内存不足的话，构建会更加耗时。
 
 3. 搜索图片
 
