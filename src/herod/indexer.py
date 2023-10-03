@@ -34,9 +34,10 @@ class Indexer:
         image_id = get_image_hash(filename)
         if self.mdb.get_image_by_id(image_id) is None:
             img = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
-            _, des = self.extractor.detect_and_compute(img, limit)
+            kps, des = self.extractor.detect_and_compute(img, limit)
             # 可能会有空白图片，没有特征点
-            if not des:
+            if not kps:
+                print(f"图片 {filename} 没有特征点")
                 return
             data = [[image_id] * len(des), des]
             self.collection.insert(data)
@@ -54,9 +55,10 @@ class Indexer:
         if self.mdb.get_image_by_id(image_id) is None:
             img = np.frombuffer(data, dtype=np.uint8)
             img = cv2.imdecode(img, cv2.IMREAD_GRAYSCALE)
-            _, des = self.extractor.detect_and_compute(img, limit)
+            kps, des = self.extractor.detect_and_compute(img, limit)
             # 可能会有空白图片，没有特征点
-            if not des:
+            if not kps:
+                print(f"图片 {name} 没有特征点")
                 return
             data = [[image_id] * len(des), des]
             self.collection.insert(data)
