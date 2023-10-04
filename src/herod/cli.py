@@ -99,12 +99,13 @@ def add_image(
     limit: int = 500,
     extractor: Annotated[Extractor, typer.Option(help="特征点提取算法")] = Extractor.SURF,
     filter: Annotated[Filter, typer.Option(help="特征点均匀化算法")] = Filter.FUFP,
+    glob: str = "**/*.*",
 ):
     """往集合中增加一张图片或递归添加一个文件夹中的图片"""
     path = Path(path)
     indexer = Indexer(collection, extractor=extractor, filter=filter)
     if path.is_dir():
-        for file in path.rglob("**/*.*"):
+        for file in path.rglob(glob):
             try:
                 indexer.add_image(str(file), limit)
                 typer.echo(f"处理 {file} 完成")
