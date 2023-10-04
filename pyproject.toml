@@ -17,7 +17,7 @@ dependencies = [
     "uvicorn[standard]>=0.23.2",
     "fastapi[all]>=0.103.2",
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 readme = "README.md"
 license = {text = "MIT"}
 
