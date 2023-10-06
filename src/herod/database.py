@@ -11,10 +11,10 @@ class Lmdb:
     def __init__(self, collection: str):
         db_dir = Path(xdg_data_home()) / "herod" / "lmdb"
         if db_dir.exists() is False:
-            os.mkdir(db_dir)
+            db_dir.mkdir(parents=True)
         if Lmdb._env.get(collection) is None:
             Lmdb._env[collection] = lmdb.open(
-                db_dir / f"{collection}.mdb", map_size=1024**3, subdir=False
+                str(db_dir / f"{collection}.mdb"), map_size=1024**3, subdir=False
             )
         self.env = Lmdb._env[collection]
 
