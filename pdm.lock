@@ -6,7 +6,7 @@ groups = ["default", "dev"]
 cross_platform = true
 static_urls = false
 lock_version = "4.3"
-content_hash = "sha256:69487d66b0c43fcdefd610d1fc9283520b08717318c5c990e0d50dfdf386c908"
+content_hash = "sha256:b8f4536e17502bd0a1f94342e99ed9b98bb21f349a95f94b313438aa9095de57"
 
 [[package]]
 name = "annotated-types"
@@ -931,6 +931,16 @@ dependencies = [
 files = [
     {file = "starlette-0.27.0-py3-none-any.whl", hash = "sha256:918416370e846586541235ccd38a474c08b80443ed31c578a418e2209b3eef91"},
     {file = "starlette-0.27.0.tar.gz", hash = "sha256:6a6b0d042acb8d469a01eba54e9cda6cbd24ac602c4cd016723117d6a7e73b75"},
+]
+
+[[package]]
+name = "tomlkit"
+version = "0.12.1"
+requires_python = ">=3.7"
+summary = "Style preserving TOML library"
+files = [
+    {file = "tomlkit-0.12.1-py3-none-any.whl", hash = "sha256:712cbd236609acc6a3e2e97253dfc52d4c2082982a88f61b640ecf0817eab899"},
+    {file = "tomlkit-0.12.1.tar.gz", hash = "sha256:38e1ff8edb991273ec9f6181244a6a391ac30e9f5098e7535640ea6be97a7c86"},
 ]
 
 [[package]]

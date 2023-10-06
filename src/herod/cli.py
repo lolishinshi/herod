@@ -6,6 +6,7 @@ from pathlib import Path
 from herod.database import Lmdb
 from herod.feature import FeatureExtractor, Filter, Extractor
 from herod.indexer import Indexer
+from herod.config import config
 from herod import server
 from pymilvus import (
     connections,
@@ -17,7 +18,7 @@ from pymilvus import (
 )
 
 app = typer.Typer()
-connections.connect(host="localhost", port="19530")
+connections.connect(host=config.milvus.host, port=config.milvus.port)
 
 
 @app.command()

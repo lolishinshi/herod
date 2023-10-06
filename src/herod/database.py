@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from herod.config import xdg_data_home
 import lmdb
 import blake3
 
@@ -8,11 +9,12 @@ class Lmdb:
     _env: dict[str, lmdb.Environment] = {}
 
     def __init__(self, collection: str):
-        if Path("./lmdb").exists() is False:
-            os.mkdir("./lmdb")
+        db_dir = Path(xdg_data_home()) / "herod" / "lmdb"
+        if db_dir.exists() is False:
+            os.mkdir(db_dir)
         if Lmdb._env.get(collection) is None:
             Lmdb._env[collection] = lmdb.open(
-                f"./lmdb/{collection}.mdb", map_size=1024**3, subdir=False
+                db_dir / f"{collection}.mdb", map_size=1024**3, subdir=False
             )
         self.env = Lmdb._env[collection]
 

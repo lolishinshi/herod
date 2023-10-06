@@ -50,3 +50,6 @@ herod create-index mycollection
 ```bash
 herod search-image mycollection /path/to/image
 ```
+
+## milvus 配置
+
