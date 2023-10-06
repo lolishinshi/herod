@@ -5,7 +5,7 @@ from fastapi import FastAPI, File, UploadFile
 from herod import indexer
 from herod.feature import Extractor, Filter
 
-api = FastAPI()
+api = FastAPI(docs_url=None, redoc_url=None)
 
 INDEXER = {}
 
@@ -46,7 +46,7 @@ async def search_image(
     file: UploadFile = File(...),
     search_list: int = 16,
     search_limit: int = 100,
-    limit: int = 100,
+    limit: int = 50,
 ):
     if collection not in INDEXER:
         INDEXER[collection] = indexer.Indexer(collection, search=True)
