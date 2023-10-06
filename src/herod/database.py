@@ -16,6 +16,7 @@ class Lmdb:
             Lmdb._env[collection] = lmdb.open(
                 str(db_dir / f"{collection}.mdb"), map_size=1024**3, subdir=False
             )
+        self.collection = collection
         self.env = Lmdb._env[collection]
 
     def record_image_id(self, image_id: int, filename: str):
@@ -31,7 +32,8 @@ class Lmdb:
     def delete(self):
         """删除集合"""
         os.remove(self.env.path())
-        del Lmdb._env[self.env.path()]
+        os.remove(self.env.path() + "-lock")
+        del Lmdb._env[self.collection]
 
 
 def get_image_hash(file: str | bytes) -> int:

@@ -76,6 +76,12 @@ def drop_collection(name: str):
 
 
 @app.command()
+def release_collection(name: str):
+    """释放一个集合的资源"""
+    Collection(name=name).release()
+
+
+@app.command()
 def create_index(collection: str, index_type: str = "DISKANN"):
     """为集合建立索引"""
     collection = Collection(name=collection)

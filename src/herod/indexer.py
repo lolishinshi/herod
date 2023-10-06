@@ -113,5 +113,5 @@ class Indexer:
 
         return d
 
-    def __del__(self):
-        self.collection.release()
+    # def __del__(self):
+    #     self.collection.release()
