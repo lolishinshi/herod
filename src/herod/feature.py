@@ -114,10 +114,11 @@ def fufp_extract(
     return result
 
 
+# TODO: 或许使用中值滤波、边缘检测等手段对图像进行预处理可以更好地提取特征点？
 def adjust_image_size(img: cv2.typing.MatLike, width: int = 1920, height: int = 1080):
     if img.shape[0] > height or img.shape[1] > width:
         scale = min(height / img.shape[0], width / img.shape[1])
-        img = cv2.resize(img, (0, 0), fx=scale, fy=scale)
+        img = cv2.resize(img, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
     return img
 
 
