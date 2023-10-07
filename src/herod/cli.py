@@ -2,7 +2,7 @@ import typer
 import cv2
 from typing_extensions import Annotated
 from pathlib import Path
-
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from herod.database import Lmdb
 from herod.feature import FeatureExtractor, Filter, Extractor
 from herod.indexer import Indexer
@@ -107,17 +107,21 @@ def add_image(
     extractor: Annotated[Extractor, typer.Option(help="特征点提取算法")] = Extractor.SURF,
     filter: Annotated[Filter, typer.Option(help="特征点均匀化算法")] = Filter.FUFP,
     glob: str = "**/*.*",
+    threads: int = 2,
 ):
     """往集合中增加一张图片或递归添加一个文件夹中的图片"""
     path = Path(path)
     indexer = Indexer(collection, extractor=extractor, filter=filter)
     if path.is_dir():
-        for file in path.rglob(glob):
-            try:
-                indexer.add_image(str(file), limit)
-                typer.echo(f"处理 {file} 完成")
-            except Exception as e:
-                typer.echo(f"处理 {file} 时出现错误：{e}")
+        with ThreadPoolExecutor(max_workers=threads) as executor:
+            futures = {executor.submit(indexer.add_image, str(file), limit): file for file in path.rglob(glob)}
+            for future in as_completed(futures):
+                file = futures[future]
+                try:
+                    future.result()
+                    typer.echo(f"处理 {file} 完成")
+                except Exception as e:
+                    typer.echo(f"处理 {file} 时出现错误：{e}")
     else:
         indexer.add_image(str(path), limit)
         typer.echo(f"处理 {path} 完成")

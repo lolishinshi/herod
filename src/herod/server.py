@@ -1,6 +1,7 @@
 import uvicorn
 import numpy as np
 import cv2
+from loguru import logger
 from fastapi import FastAPI, File, UploadFile
 from herod import indexer
 from herod.feature import Extractor, Filter
@@ -53,6 +54,7 @@ async def search_image(
     buf = await file.read()
     img = np.frombuffer(buf, dtype=np.uint8)
     img = cv2.imdecode(img, cv2.IMREAD_GRAYSCALE)
+    logger.info(f"shape: {img.shape}")
     return INDEXER[collection].search_image(img, search_list, search_limit, limit)[:20]
 
 
