@@ -9,6 +9,21 @@ from collections import defaultdict
 from datetime import datetime
 
 
+# https://www.jianshu.com/p/4d2b45918958
+def wilson_score(values: list[float], p_z: float = 2.326):
+    values = 1 - np.array(values)
+    mean = np.mean(values)
+    var = np.var(values)
+    total = len(values)
+
+    score = (
+        mean
+        + (np.square(p_z) / (2.0 * total))
+        - ((p_z / (2.0 * total)) * np.sqrt(4.0 * total * var + np.square(p_z)))
+    ) / (1 + np.square(p_z) / total)
+    return score
+
+
 class Indexer:
     def __init__(
         self,
@@ -104,8 +119,7 @@ class Indexer:
         d = [
             (
                 self.mdb.get_image_by_id(mid).decode(),
-                len(distances),
-                sum(distances) / len(distances),
+                wilson_score(distances),
             )
             for mid, distances in d.items()
         ]
