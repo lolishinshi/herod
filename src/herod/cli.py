@@ -114,7 +114,10 @@ def add_image(
     indexer = Indexer(collection, extractor=extractor, filter=filter)
     if path.is_dir():
         with ThreadPoolExecutor(max_workers=threads) as executor:
-            futures = {executor.submit(indexer.add_image, str(file), limit): file for file in path.rglob(glob)}
+            futures = {
+                executor.submit(indexer.add_image, str(file), limit): file
+                for file in path.rglob(glob)
+            }
             for future in as_completed(futures):
                 file = futures[future]
                 try:
@@ -137,7 +140,8 @@ def search_image(
 ):
     """在集合中搜索一张图片"""
     indexer = Indexer(collection, search=True)
-    result = indexer.search_image(filename, search_list, search_limit, limit)
+    elapsed, result = indexer.search_image(filename, search_list, search_limit, limit)
+    typer.echo(f"搜索耗时：{elapsed} 秒")
     for filename, image_id, distance in result[:20]:
         typer.echo(f"{filename}\t{image_id}\t{distance}")
 

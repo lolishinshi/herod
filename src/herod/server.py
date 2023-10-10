@@ -55,7 +55,10 @@ async def search_image(
     img = np.frombuffer(buf, dtype=np.uint8)
     img = cv2.imdecode(img, cv2.IMREAD_GRAYSCALE)
     logger.info(f"shape: {img.shape}")
-    return INDEXER[collection].search_image(img, search_list, search_limit, limit)[:20]
+    elapsed, data = INDEXER[collection].search_image(
+        img, search_list, search_limit, limit
+    )[:20]
+    return {"elapsed": elapsed, "result": data[:20]}
 
 
 def start_server(host: str, port: int):

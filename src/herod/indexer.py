@@ -85,7 +85,7 @@ class Indexer:
         search_list: int = 16,
         search_limit: int = 100,
         limit: int = 100,
-    ) -> list[tuple[str, int, float]]:
+    ) -> tuple[float, list[tuple[str, int, float]]]:
         """
         在集合中搜索图片
         :param image: 图片
@@ -108,7 +108,7 @@ class Indexer:
             limit=limit,
             output_fields=["image"],
         )
-        print(f"搜索耗时：{(datetime.now() - now).total_seconds()}s")
+        elapsed = (datetime.now() - now).total_seconds()
 
         d = defaultdict(list)
 
@@ -125,7 +125,7 @@ class Indexer:
         ]
         d.sort(key=lambda x: x[1], reverse=True)
 
-        return d
+        return elapsed, d
 
     # def __del__(self):
     #     self.collection.release()
